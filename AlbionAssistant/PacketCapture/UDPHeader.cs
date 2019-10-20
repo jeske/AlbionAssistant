@@ -84,6 +84,16 @@ namespace AlbionAssistant
             }
         }
 
+        //Length of UDP header is always eight bytes so we subtract that out of the total 
+        //length to find the length of the UDP payload
+        private static int UDP_HEADER_LENGTH = 8;
+
+        public int payloadLength {
+            get {
+                return usLength - UDP_HEADER_LENGTH;
+            }
+        }
+
         public byte[] Data
         {
             get

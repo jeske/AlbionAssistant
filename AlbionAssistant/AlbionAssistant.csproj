@@ -76,6 +76,7 @@
     </ApplicationDefinition>
     <Compile Include="PacketCapture\DNSHeader.cs" />
     <Compile Include="PacketCapture\IPHeader.cs" />
+    <Compile Include="PacketCapture\PhotonObserver.cs" />
     <Compile Include="PacketCapture\_PacketCapture.cs" />
     <Compile Include="PacketCapture\TCPHeader.cs" />
     <Compile Include="PacketCapture\UDPHeader.cs" />
