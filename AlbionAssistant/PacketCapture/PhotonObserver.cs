@@ -57,8 +57,8 @@ namespace PhotonObserver {
                     case CommandType.Acknowledge:     // 8 bytes of parms
                         packet.ReadUInt32(); // RecvRelSeqNum
                         packet.ReadUInt32(); // RecvSentTime
-                        data_length = 0;     // no data for some reason.. 
-                        // TODO: maybe assert data_length == 8?
+                        data_length -= 2; 
+                        // TODO: maybe assert data_length == 0 after this?
                         break;
                     case CommandType.SendUnreliable:
                         packet.ReadUInt32(); // UnRelSeqNum                        
