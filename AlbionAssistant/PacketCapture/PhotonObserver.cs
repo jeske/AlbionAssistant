@@ -1,4 +1,5 @@
 ﻿using System;
+using Be.IO;
 
 //
 // AlbionAssistant
@@ -47,15 +48,21 @@ namespace PhotonObserver {
                 packet.ReadUInt32(); // reliablesequencenumber  -- ? uint32 ? 
 
                 int data_length = command_length_info - CMD_HDR_LEN;
+
+                Console.WriteLine("  [{0}] Photon Cmd - {1}:{2}  len {3}", 
+                    cmd_number, cmd_type.ToString(), (int)cmd_type, command_length_info);
+
                 // decode paramaters
                 switch (cmd_type) {
                     case CommandType.Acknowledge:     // 8 bytes of parms
                         packet.ReadUInt32(); // RecvRelSeqNum
                         packet.ReadUInt32(); // RecvSentTime
                         data_length = 0;     // no data for some reason.. 
+                        // TODO: maybe assert data_length == 8?
                         break;
                     case CommandType.SendUnreliable:
                         packet.ReadUInt32(); // UnRelSeqNum                        
+                        data_length -= 4;
                         break;
                     case CommandType.SendReliableFragment:   // 20 bytes of parms
                         packet.ReadUInt32(); // Frag_start_seq_num
@@ -63,6 +70,7 @@ namespace PhotonObserver {
                         packet.ReadUInt32(); // Frag_frag_num
                         packet.ReadUInt32(); // Frag_total_len
                         packet.ReadUInt32(); // Frag_frag_off          
+                        data_length -= 20;  // subtract out these paramaters
                         break;
                     case CommandType.SendReliable:
                     case CommandType.Connect:
@@ -72,12 +80,11 @@ namespace PhotonObserver {
                         break;
                 }
 
-
                 // read command data
                 
                 byte[] data = packet.ReadBytes(data_length);
 
-                Console.WriteLine("  [{0}] Photon Cmd - {1}", cmd_number, cmd_type.ToString());
+                
             }
         }
 

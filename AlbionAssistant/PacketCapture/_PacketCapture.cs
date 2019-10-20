@@ -13,6 +13,8 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
+using Be.IO;
+
 using PhotonObserver;
 
 
@@ -194,10 +196,11 @@ namespace AlbionAssistant {
                             PacketEvent?.Invoke(String.Format("Albion UDP Packet, size={0}",ipHeader.MessageLength));
                             Console.WriteLine("Albion packet received .. size = " + udpHeader.payloadLength.ToString());
 
-                            DumpRawPacket(byteData, nReceived);
+                            // DumpRawPacket(byteData, nReceived);
 
                             // DumpUDPPacket(udpHeader);
-                            photonDecoder.decodePacket(new BinaryReader(new MemoryStream(udpHeader.Data,0,udpHeader.payloadLength)));
+                            photonDecoder.decodePacket(
+                            new BeBinaryReader(new MemoryStream(udpHeader.Data,0,udpHeader.payloadLength)));
 
                     } else if (udpHeader.DestinationPort == "53" || udpHeader.SourcePort == "53") {
                             //  If the port is equal to 53 then the underlying protocol is DNS
@@ -209,7 +212,6 @@ namespace AlbionAssistant {
                     case Protocol.Unknown:
                         break;
                 }
-
             
             }
 
