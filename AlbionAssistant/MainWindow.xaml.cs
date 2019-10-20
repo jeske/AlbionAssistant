@@ -32,7 +32,7 @@ namespace AlbionAssistant
         public MainWindow()
         {
             InitializeComponent();
-
+            this.Closed += MainWindow_Closed;
             treeView.Items.Add(
                 new MenuItem{ 
                     Title = String.Format(
@@ -43,6 +43,7 @@ namespace AlbionAssistant
             
 
             // throw some sample items into the UI control
+            /*
             MenuItem root = new MenuItem() { Title = "Menu" };
             MenuItem childItem1 = new MenuItem() { Title = "Child item #1" };
             childItem1.Items.Add(new MenuItem() { Title = "Child item #1.1" });
@@ -50,11 +51,32 @@ namespace AlbionAssistant
             root.Items.Add(childItem1);
             root.Items.Add(new MenuItem() { Title = "Child item #2" });
             treeView.Items.Add(root);
+            */
 
             Console.WriteLine("Start Capturing Packets...");
             captureManager = new PacketCapture();
+
+            captureManager.PacketEvent += CaptureManager_PacketEvent;
+
+
             captureManager.StartCapture();
         }
+
+        private void CaptureManager_PacketEvent(string info) {
+            this.Dispatcher.Invoke(new Action(() => {
+                treeView.Items.Add(new MenuItem() { Title = info });
+            }));
+            
+        }
+
+        private void MainWindow_Closed(object sender, EventArgs e) {
+            captureManager.StopCapture();
+            System.GC.Collect();
+            Console.WriteLine("Albion Assistant Exiting...");
+            System.Windows.Application.Current.Shutdown();
+            // TODO: figure out how to make this quit faster.. it takes a while for the threads to exit...
+        }
+               
     }
 
     public class MenuItem

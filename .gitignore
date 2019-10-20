@@ -19,6 +19,9 @@
 *.suo
 *.vs
 
+# nugetpackages
+packages/**
+
 
 
 

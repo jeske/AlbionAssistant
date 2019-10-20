@@ -32,8 +32,8 @@ namespace AlbionAssistant {
         private byte[] byteData = new byte[MAX_PACKET_SIZE];
         private bool bContinueCapturing = false;            //A flag to check if packets are to be captured or not
 
-        private delegate void PacketEventDelegate(string info);
-        event PacketEventDelegate PacketEvent;
+        public delegate void PacketEventDelegate(string info);
+        public event PacketEventDelegate PacketEvent;
 
         public PacketCapture() { }
 
@@ -43,6 +43,16 @@ namespace AlbionAssistant {
             public AsyncCaptureState(Socket workSocket) {
                 this.workSocket = workSocket;
             }
+        }
+
+
+        public void StopCapture() {
+            foreach (var socket in listenSockets) {
+                socket.Close();
+                socket.Dispose();
+            }
+            bContinueCapturing = false;
+            listenSockets = new List<Socket>();
         }
 
         public void StartCapture()
@@ -124,9 +134,7 @@ namespace AlbionAssistant {
 
                 try {
                     int nReceived = mainSocket.EndReceive(ar);
-
-                    Console.WriteLine("packet received!");
-
+                   
                     //Analyze the bytes received...
 
                     ParseData(byteData, nReceived);
@@ -180,8 +188,9 @@ namespace AlbionAssistant {
                         if (!(ports.Contains(udpHeader.DestinationPort) || ports.Contains(udpHeader.SourcePort)))
                         {
                             //  Albion Photon Data       
-                            PacketEvent?.Invoke(String.Format("Albion UDP Packet, size={0}",byteData.Length));
-                        } else if (udpHeader.DestinationPort == "53" || udpHeader.SourcePort == "53") {
+                            PacketEvent?.Invoke(String.Format("Albion UDP Packet, size={0}",ipHeader.MessageLength));
+                            Console.WriteLine("Albion packet received .. size = " + ipHeader.MessageLength.ToString());
+                    } else if (udpHeader.DestinationPort == "53" || udpHeader.SourcePort == "53") {
                             //  If the port is equal to 53 then the underlying protocol is DNS
                             //  Note: DNS can use either TCP or UDP thats why the check is done twice               
                             PacketEvent?.Invoke(String.Format("UDP DNS Packet, size={0}", byteData.Length));
@@ -191,7 +200,10 @@ namespace AlbionAssistant {
                     case Protocol.Unknown:
                         break;
                 }
+
+            
             }
+
 
         } // class PacketCapture
 
