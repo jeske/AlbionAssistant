@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28917.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbionAssistant", "AlbionAssistant\AlbionAssistant.csproj", "{6AD32261-5747-46AC-8CB7-FF823F531843}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6AD32261-5747-46AC-8CB7-FF823F531843}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AD32261-5747-46AC-8CB7-FF823F531843}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AD32261-5747-46AC-8CB7-FF823F531843}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AD32261-5747-46AC-8CB7-FF823F531843}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {84C58946-C3EF-4186-B569-AA1559BF5799}
+	EndGlobalSection
+EndGlobal
