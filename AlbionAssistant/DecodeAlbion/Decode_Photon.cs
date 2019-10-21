@@ -8,6 +8,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using Be.IO;
 
 // PhotonObserver
@@ -32,6 +33,8 @@ namespace AlbionAssistant {
         }
     }
 
+    
+
     public class PhotonDecoder {
 
         public delegate void Delegate_PhotonEvent_Info(string info);
@@ -55,24 +58,29 @@ namespace AlbionAssistant {
             Event_Photon_Info?.Invoke(String.Format("Photon Packet with ({0}) commands", cmd_count));
 
             for (int cmd_number = 0; cmd_number < cmd_count; cmd_number++) {
-                // read photon command header
-                CommandType cmd_type = (CommandType)packet.ReadByte(); // Type
-                int cmd_channel_id = packet.ReadByte(); // ChannelID
-                packet.ReadByte(); // Flags
-                packet.ReadByte(); // ReservedByte
-                int command_length_info = packet.ReadInt32(); // Length                  -- ? uint32 ?
-                packet.ReadUInt32(); // reliablesequencenumber  -- ? uint32 ? 
 
-                int data_length = command_length_info - CMD_HDR_LEN;
+                // *************************************
+                // Decode Photon Command Header
+                // *************************************
+                var cmd_hdr = new PhotonCmdHeader();
+                cmd_hdr.type                       /**/  = (CommandType)packet.ReadByte();           // Type
+                cmd_hdr.ChannelID                  /**/  = packet.ReadByte();                        // ChannelID
+
+                cmd_hdr.flags                      /**/  = packet.ReadByte();                        // Flags
+                cmd_hdr.ReservedByte               /**/  = packet.ReadByte();                        // ReservedByte
+                cmd_hdr.CmdLength                  /**/  = packet.ReadInt32();                       // Length                  -- ? uint32 ?
+                cmd_hdr.ReliableSequenceNumber     /**/  = packet.ReadInt32();                      // reliablesequencenumber  -- ? uint32 ? 
+
+                int data_length = cmd_hdr.CmdLength - CMD_HDR_LEN;
 
                 Event_Photon_Info?.Invoke(
                     String.Format("  [{0}] Photon Cmd - {1}:{2}  len {3}", 
-                        cmd_number, cmd_type.ToString(), (int)cmd_type, command_length_info));
+                        cmd_number, cmd_hdr.type.ToString(), (int)cmd_hdr.type, cmd_hdr.CmdLength));
 
-                // read command data
+                // ***** read command data ****
                 byte[] data = packet.ReadBytes(data_length);
                 
-                try { decode_PhotonPacket(cmd_type,cmd_channel_id, data); }
+                try { decode_PhotonPacket(cmd_hdr, data); }
                 #if HIDE_PARSE_ERRORS
                 catch (System.IO.EndOfStreamException ex) {                    
                 }
@@ -82,11 +90,11 @@ namespace AlbionAssistant {
             } // for loop
         }
 
-        private void decode_PhotonPacket(CommandType cmd_type, int cmd_channel_id, byte[] data) {
+        private void decode_PhotonPacket(PhotonCmdHeader cmd_hdr, byte[] data) {
             var packet = new BeBinaryReader(new MemoryStream(data, 0, data.Length));
 
             // decode paramaters
-            switch (cmd_type) {
+            switch (cmd_hdr.type) {
                 case CommandType.Acknowledge:     // 8 bytes of parms
                     packet.ReadUInt32(); // RecvRelSeqNum
                     packet.ReadUInt32(); // RecvSentTime                                                               
@@ -100,6 +108,11 @@ namespace AlbionAssistant {
                     packet.ReadUInt32(); // Frag_frag_num
                     packet.ReadUInt32(); // Frag_total_len
                     packet.ReadUInt32(); // Frag_frag_off                              
+
+
+                    // TODO: implement fragment reassambly
+                    // https://github.com/broderickhyman/photon_spectator/blob/master/fragment_buffer.go
+
                     break;
                 case CommandType.SendReliable:
                     int rel_msg_sig = packet.ReadByte(); // Reliable Message Signature
@@ -116,28 +129,11 @@ namespace AlbionAssistant {
                             packet.ReadByte(); // Operation Code
                             break;
                         case MessageTypes.EventData:
+                            
                             break;                        
                         case MessageTypes.Response:
                         case MessageTypes.ResponseAlt:
-                            var opResponse = new ReliableMessage_Response();
-                            opResponse.ChannelID = cmd_channel_id;
-
-                            opResponse.OperationCode = packet.ReadByte(); // Operation Code
-                            opResponse.OperationResponseCode = packet.ReadUInt16(); // Operation Response Code
-                            opResponse.OperationDebugByte = packet.ReadByte(); // Operation Debug Byte                                                        
-                            
-                            opResponse.ParameterCount = packet.ReadUInt16(); // Parameter Count   (?? is this valid for all msg types?)
-
-                            // decode the paramaters
-                            for (int i=0;i<opResponse.ParameterCount;i++) {
-                                var paramID = packet.ReadByte(); // paramID
-                                PhotonParamType paramType = (PhotonParamType)packet.ReadByte(); // paramType
-
-
-                                opResponse.ParamaterData = Decode_PhotonValueType.Decode(packet,paramType);                                
-                            }
-                            
-                            Event_Photon_ReliableResponse?.Invoke(opResponse);
+                            decode_Response(cmd_hdr,packet);
                             break;
                         default:
                             break;
@@ -149,15 +145,54 @@ namespace AlbionAssistant {
                 case CommandType.Ping:
                     break;
                 default:
-                    Event_Photon_Info?.Invoke("Decode_Photon: ignoring unknown command type: " + cmd_type.ToString());
+                    Event_Photon_Info?.Invoke("Decode_Photon: ignoring unknown command type: " + cmd_hdr.type.ToString());
                     break;
             }
             
         }
 
+        private void decode_Response(PhotonCmdHeader cmd_hdr, BinaryReader packet) {
+            // see func ReliableMessage() decode in...
+            // https://github.com/broderickhyman/photon_spectator/blob/master/photon_command.go
+
+            var opResponse = new ReliableMessage_Response();
+            opResponse.ChannelID = cmd_hdr.ChannelID;
+
+            opResponse.OperationCode = packet.ReadByte(); // Operation Code
+            opResponse.OperationResponseCode = packet.ReadUInt16(); // Operation Response Code
+            opResponse.OperationDebugByte = packet.ReadByte(); // Operation Debug Byte                                                        
+
+            opResponse.ParameterCount = packet.ReadUInt16(); // Parameter Count   (?? is this valid for all msg types?)
+
+            var parameters = new ReliableMessage_Response.Paramaters();
+            // decode the paramaters
+            for (int i = 0; i < opResponse.ParameterCount; i++) {
+                var paramID = packet.ReadByte(); // paramID
+                PhotonParamType paramType = (PhotonParamType)packet.ReadByte(); // paramType
+
+                var param_value = Decode_PhotonValueType.Decode(packet, paramType);
+
+                parameters[paramID] = param_value;
+                Event_Photon_Info?.Invoke("ParamID: " + paramID + "  value: " + param_value.ToString());
+
+            }
+            opResponse.ParamaterData = parameters;
+
+            Event_Photon_ReliableResponse?.Invoke(opResponse);
+        }
+
+
     }
 
     public class ReliableMessage_Response {
+        public class Paramaters : Dictionary<int,PhotonDataAtom> {
+            public override string ToString() {
+                var acc = new List<string>();
+                this.ToList().ForEach(kvp => acc.Add(String.Format("{0:D3}:{1}",kvp.Key,kvp.Value)));
+                return "PhotonParms - \n... " + String.Join("\n... ",acc);
+            }
+        }
+
         public int ChannelID;
 
         protected byte signature;
@@ -167,13 +202,25 @@ namespace AlbionAssistant {
         public UInt16 OperationResponseCode;
         public byte OperationDebugByte;
 
-        public PhotonDataAtom ParamaterData;
+        public Paramaters ParamaterData;
         
         public UInt16 ParameterCount;        
         public byte[] raw_data;
 
 
     }
+
+    public class PhotonCmdHeader {
+        public CommandType type;
+        public byte ChannelID;
+        public byte flags;
+        public byte ReservedByte;
+        public Int32 CmdLength;
+        public Int32 ReliableSequenceNumber;
+
+        // public byte[] data;
+    }
+
     /*
 
     struct PhotonCommand {

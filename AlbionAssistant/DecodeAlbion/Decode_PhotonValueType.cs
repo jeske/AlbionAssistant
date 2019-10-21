@@ -7,6 +7,8 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+
+using System.Linq;
 using Be.IO;
 
 // https://doc.photonengine.com/en-us/realtime/current/reference/binary-protocol
@@ -29,10 +31,10 @@ namespace AlbionAssistant {
                 case PhotonParamType.Float32Type:     return new PhotonData_Value<Single>(paramType, packet.ReadSingle());
                 case PhotonParamType.DoubleType:      return new PhotonData_Value<Double>(paramType, packet.ReadDouble());
 
-                case PhotonParamType.SliceType:       return PhotonData_Slice.DecodeFrom(packet);
-                case PhotonParamType.StringSliceType: return PhotonData_Slice.DecodeFrom_WithType(packet, PhotonParamType.StringType);
-                case PhotonParamType.Int8SliceType:   return PhotonData_Slice.DecodeFrom_WithType(packet,PhotonParamType.Int8Type);
-                case PhotonParamType.Int32SliceType:  return PhotonData_Slice.DecodeFrom_WithType(packet, PhotonParamType.Int32Type);
+                case PhotonParamType.SliceType:       return PhotonData_SliceType.DecodeFrom(packet);
+                case PhotonParamType.StringSliceType: return PhotonData_SliceType.DecodeFrom_WithType(packet, PhotonParamType.StringType);
+                case PhotonParamType.Int8SliceType:   return PhotonData_SliceType.DecodeFrom_WithType(packet,PhotonParamType.Int8Type);
+                case PhotonParamType.Int32SliceType:  return PhotonData_SliceType.DecodeFrom_WithType(packet, PhotonParamType.Int32Type);
 
                 case PhotonParamType.StringType:
                     var len = packet.ReadUInt16();
@@ -95,30 +97,43 @@ namespace AlbionAssistant {
         }
     }
 
-    public class PhotonData_Slice : PhotonDataAtom  {       
-        public PhotonDataAtom[] data;
+    public class PhotonData_SliceValues : PhotonDataAtom {
+        public PhotonDataAtom[] values;
 
-        public PhotonData_Slice(PhotonParamType type,PhotonDataAtom[] data) {
+        public PhotonData_SliceValues(PhotonParamType type, PhotonDataAtom[] values) {
+            this.type = type;
+            this.values = values;
+        }
+    }
+
+    public class PhotonData_SliceType : PhotonDataAtom  {       
+        public PhotonData_SliceValues data;
+
+        public PhotonData_SliceType(PhotonParamType type, PhotonData_SliceValues data) {
             this.type = type;
             this.data = data;
         }
         public override string ToString() {
-            return String.Format("PhotonData_Slice<{0}>[ {1} ]",type,data);
+            return 
+                String.Format("PhotonData_Slice<{0}:{1}> len {2} [ {3} ]",
+                    type, data.type,
+                    data.values.Length,
+                    String.Join(", ", data.values.Select(x => x.ToString())));
         }
-
-        public static PhotonData_Slice DecodeFrom(BinaryReader packet) {
+        
+        public static PhotonData_SliceType DecodeFrom(BinaryReader packet) {
             var length = packet.ReadUInt16();
-            PhotonParamType type = (PhotonParamType)packet.ReadByte();
+            PhotonParamType value_types = (PhotonParamType)packet.ReadByte();
 
             var acc = new List<PhotonDataAtom>();
 
             for (int i=0;i<length;i++) {
-                acc.Add(Decode_PhotonValueType.Decode(packet,type));
+                acc.Add(Decode_PhotonValueType.Decode(packet,value_types));
             }
-            return new PhotonData_Slice(type,acc.ToArray());
+            return new PhotonData_SliceType(PhotonParamType.SliceType,new PhotonData_SliceValues(value_types,acc.ToArray()));
         }
 
-        public static PhotonData_Slice DecodeFrom_WithType(BinaryReader packet, PhotonParamType type) {
+        public static PhotonData_SliceType DecodeFrom_WithType(BinaryReader packet, PhotonParamType type) {
             var length = packet.ReadUInt16();
 
             var acc = new List<PhotonDataAtom>();
@@ -126,9 +141,8 @@ namespace AlbionAssistant {
             for (int i = 0; i < length; i++) {
                 acc.Add(Decode_PhotonValueType.Decode(packet, type));
             }
-            return new PhotonData_Slice(type, acc.ToArray());
+            return new PhotonData_SliceType(type,new PhotonData_SliceValues(type, acc.ToArray()));
         }
-
 
     }
     #endregion

@@ -13,10 +13,10 @@ namespace AlbionAssistant {
 
         public void Decode_ReliableResponse(ReliableMessage_Response info) {
             Event_Albion_Info?.Invoke(
-                String.Format("RESPONSE [{0}] - {0} bytes, chn {1}, ",
+                String.Format("RESPONSE [{0} - chn {1}] \n... {2}",
                     info.OperationCode,
-                    info.ParamaterData,
-                    info.ChannelID
+                    info.ChannelID,
+                    info.ParamaterData
                     ));
 
         }
