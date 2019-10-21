@@ -1,36 +1,34 @@
-﻿using System;
-using Be.IO;
-
-//
+﻿//
 // AlbionAssistant
 // Copyright (C) 2019 by David W. Jeske
 //
 
 
+using System;
+using System.IO;
+using System.Collections.Generic;
+using Be.IO;
+
 // PhotonObserver
 //
 // This is an observer for the "Photon Engine" network communication layer used by Albion
 // https://www.photonengine.com/en-us/Photon
+// https://doc.photonengine.com/en-us/realtime/current/reference/serialization-in-photon
 // https://doc.photonengine.com/en-us/realtime/current/reference/binary-protocol
 // 
 // https://github.com/broderickhyman/photon_spectator
 // https://github.com/AltspaceVR/wireshark-photon-dissector/blob/master/photon.lua
 //
 
-
-using System.IO;
-
 namespace AlbionAssistant {
 
 
-    // This is a complete reliable message, which might have been reassembled from fragments.
-    public class PhotonEventReliableDatum {
-            public int ChannelID;
-            public byte[] data;
-            public PhotonEventReliableDatum(int channel_id, byte[] datum) {
-                this.ChannelID = channel_id;
-                this.data = datum;
-            }
+    public static class ReadBytesToEndExtension {
+        public static byte[] ReadBytesToEnd<BinaryReader>(this BinaryReader binaryReader) {
+            var byte_acc = new List<byte>();            
+
+            return byte_acc.ToArray();
+        }
     }
 
     public class PhotonDecoder {
@@ -38,8 +36,8 @@ namespace AlbionAssistant {
         public delegate void Delegate_PhotonEvent_Info(string info);
         public event Delegate_PhotonEvent_Info Event_Photon_Info;
 
-        public delegate void Delegate_PhotonEvent_ReliableDatum(PhotonEventReliableDatum info);
-        public event Delegate_PhotonEvent_ReliableDatum Event_Photon_ReliableDatum;
+        public delegate void Delegate_PhotonEvent_ReliableDatum(ReliableMessage_Response info);
+        public event Delegate_PhotonEvent_ReliableDatum Event_Photon_ReliableResponse;
 
 
         public void decodeUDPPacket(BinaryReader packet) {
@@ -70,54 +68,102 @@ namespace AlbionAssistant {
                     String.Format("  [{0}] Photon Cmd - {1}:{2}  len {3}", 
                         cmd_number, cmd_type.ToString(), (int)cmd_type, command_length_info));
 
-                // decode paramaters
-                switch (cmd_type) {
-                    case CommandType.Acknowledge:     // 8 bytes of parms
-                        packet.ReadUInt32(); // RecvRelSeqNum
-                        packet.ReadUInt32(); // RecvSentTime                        
-                        data_length -= 8; 
-                        // TODO: maybe assert data_length == 0 after this?
-                        break;
-                    case CommandType.SendUnreliable:
-                        packet.ReadUInt32(); // UnRelSeqNum                        
-                        data_length -= 4;
-                        break;
-                    case CommandType.SendReliableFragment:   // 20 bytes of parms
-                        packet.ReadUInt32(); // Frag_start_seq_num
-                        packet.ReadUInt32(); // Frag_frag_count
-                        packet.ReadUInt32(); // Frag_frag_num
-                        packet.ReadUInt32(); // Frag_total_len
-                        packet.ReadUInt32(); // Frag_frag_off          
-                        data_length -= 20;  // subtract out these paramaters
-                        break;
-                    case CommandType.SendReliable:
-                    case CommandType.Connect:
-                    case CommandType.VerifyConnect:    
-                        break;
-                    default:
-                        break;
-                }
-
                 // read command data
-                
                 byte[] data = packet.ReadBytes(data_length);
 
-                // now do something based on the packet type
+                decode_PhotonPacket(cmd_type,cmd_channel_id, data);                
 
-                switch (cmd_type) {
-                    case CommandType.SendReliable:
-                        Event_Photon_ReliableDatum?.Invoke(new PhotonEventReliableDatum(cmd_channel_id,data));
+            } // for loop
+        }
+
+        private void decode_PhotonPacket(CommandType cmd_type, int cmd_channel_id, byte[] data) {
+            var packet = new BeBinaryReader(new MemoryStream(data, 0, data.Length));
+
+            // decode paramaters
+            switch (cmd_type) {
+                case CommandType.Acknowledge:     // 8 bytes of parms
+                    packet.ReadUInt32(); // RecvRelSeqNum
+                    packet.ReadUInt32(); // RecvSentTime                                                               
+                    break;
+                case CommandType.SendUnreliable:
+                    packet.ReadUInt32(); // UnRelSeqNum                                            
+                    break;
+                case CommandType.SendReliableFragment:   // 20 bytes of parms
+                    packet.ReadUInt32(); // Frag_start_seq_num
+                    packet.ReadUInt32(); // Frag_frag_count
+                    packet.ReadUInt32(); // Frag_frag_num
+                    packet.ReadUInt32(); // Frag_total_len
+                    packet.ReadUInt32(); // Frag_frag_off                              
+                    break;
+                case CommandType.SendReliable:
+                    int rel_msg_sig = packet.ReadByte(); // Reliable Message Signature
+                    MessageTypes rel_msg_type = (MessageTypes)packet.ReadByte(); // reliable message type
+                   
+                    if ((int)rel_msg_type > 128) {
+                        // encrypted message types not supported
+                        Event_Photon_Info?.Invoke("Decode_Photon: ignoring encrypted message type: " + rel_msg_type.ToString());
                         break;
-                    default:
-                        // do nothing
-                        break;
-                }
+                    }
+
+                    switch (rel_msg_type) {
+                        case MessageTypes.Request:
+                            packet.ReadByte(); // Operation Code
+                            break;
+                        case MessageTypes.EventData:
+                            break;
+                        case MessageTypes.Response:
+                        case MessageTypes.ResponseAlt:
+                            var opResponse = new ReliableMessage_Response();
+
+                            opResponse.ChannelID = cmd_channel_id;
+                            opResponse.OperationCode = packet.ReadByte(); // Operation Code
+                            opResponse.OperationResponseCode = packet.ReadByte(); // Operation Response Code
+                            opResponse.OperationDebugByte = packet.ReadByte(); // Operation Debug Byte                                                        
+                            
+                            opResponse.ParameterCount = packet.ReadUInt16(); // Parameter Count   (?? is this valid for all msg types?)
+
+                            // decode the paramaters
+                            for (int i=0;i<opResponse.ParameterCount;i++) {
+                                var paramID = packet.ReadByte(); // paramID
+                                PhotonParamType paramType = (PhotonParamType)packet.ReadByte(); // paramType
+
+
+                                Decode_PhotonValueType.Decode(packet,paramType);                                
+                            }
+
+                            opResponse.data = packet.ReadBytesToEnd();
+                            Event_Photon_ReliableResponse?.Invoke(opResponse);
+                            break;
+                        default:
+                            break;
+                    }
+                    
+                    break;
+                case CommandType.Connect:
+                case CommandType.VerifyConnect:
+                    break;
+                default:
+                    Event_Photon_Info?.Invoke("Decode_Photon: ignoring unknown command type: " + cmd_type.ToString());
+                    break;
             }
+            
         }
 
     }
 
+    public class ReliableMessage_Response {
+        public int ChannelID;
 
+        protected byte signature;
+        public MessageTypes type;
+
+        public byte OperationCode;
+        public byte OperationResponseCode;
+        public byte OperationDebugByte;
+
+        public UInt16 ParameterCount;
+        public byte[] data;
+    }
     /*
 
     struct PhotonCommand {
@@ -166,7 +212,7 @@ namespace AlbionAssistant {
     */
 
 
-    enum CommandType {
+    public enum CommandType {
         Acknowledge = 1,
         Connect = 2,
         VerifyConnect = 3,
@@ -182,21 +228,21 @@ namespace AlbionAssistant {
     };
 
 
-    enum ChannelNames {
+    public enum ChannelNames {
         PhotonViewInstantiation = 1,
         VoIP = 2,
         RPC = 3,
         PhotonViewSerialization = 4,
     };
 
-    enum MessageTypes {
+    public enum MessageTypes {
         Request = 2,
         ResponseAlt = 3,
         EventData = 4,
         Response = 7,
     };
 
-    enum OperationNames {
+    public enum OperationNames {
         GetRegions = 220,
         GetLobbyStats = 221,
         FindFriends = 222,
@@ -217,7 +263,7 @@ namespace AlbionAssistant {
         Join = 255,
     };
 
-    enum EventNames {
+    public enum EventNames {
         AzureNodeInfo = 210,
         TypedlobbyStats = 224,
         AppStats = 226,

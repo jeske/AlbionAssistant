@@ -81,7 +81,7 @@ namespace AlbionAssistant
 
             // setup packet processing hooks
             captureManager.PacketEvent_UDP += CaptureManager_PacketEvent_UDP;
-            photonDecoder.Event_Photon_ReliableDatum += PhotonDecoder_PhotonReliableDatumEvent;
+            photonDecoder.Event_Photon_ReliableResponse += PhotonDecoder_PhotonReliableDatumEvent;
             
 
             Console.WriteLine("Start Capturing Packets...");
@@ -106,10 +106,8 @@ namespace AlbionAssistant
         }
 
         
-        private void PhotonDecoder_PhotonReliableDatumEvent(PhotonEventReliableDatum info) {
-            // TODO... start decoding Albion Packets!
-            AddEvent("Photon-reliable packet - size: " + info.data.Length.ToString());
-            albionDecoder.DecodeReliableDatum(info);
+        private void PhotonDecoder_PhotonReliableDatumEvent(ReliableMessage_Response info) {
+            albionDecoder.Decode_ReliableResponse(info);
         }
 
 
