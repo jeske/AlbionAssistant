@@ -25,7 +25,7 @@ namespace AlbionAssistant {
         UDP = 17,
         Unknown = -1
     };
-
+    
     public class PacketCapture
     {
         private static uint MAX_PACKET_SIZE = 65535;
@@ -35,10 +35,13 @@ namespace AlbionAssistant {
         private byte[] byteData = new byte[MAX_PACKET_SIZE];
         private bool bContinueCapturing = false;            //A flag to check if packets are to be captured or not
 
-        public delegate void PacketEventDelegate(string info);
-        public event PacketEventDelegate PacketEvent;
+        public delegate void PacketEvent_Info_Delegate(string info);
+        public event PacketEvent_Info_Delegate PacketEvent_Info;
 
-        public PhotonDecoder photonDecoder = new PhotonDecoder();
+        public delegate void PacketEvent_UDP_Delegate(UDPHeader packet);
+        public event PacketEvent_UDP_Delegate PacketEvent_UDP;
+
+        public PhotonObserver.PhotonDecoder photonDecoder = new PhotonObserver.PhotonDecoder();
 
 
         public PacketCapture() { }
@@ -174,6 +177,8 @@ namespace AlbionAssistant {
                 //is being carried by it
                 IPHeader ipHeader = new IPHeader(byteData, nReceived);
            
+                // TODO: make this packet capture + event delivery configurable instead of hardcoded
+
                 //Now according to the protocol being carried by the IP datagram we parse 
                 //the data field of the datagram
                 switch (ipHeader.ProtocolType)
@@ -186,26 +191,23 @@ namespace AlbionAssistant {
                         UDPHeader udpHeader = 
                             new UDPHeader(ipHeader.Data,  (int)ipHeader.MessageLength);
 
-                
+                        
 
                         var ports = new HashSet<string> { "5055", "5056" };
                         
                         if (ports.Contains(udpHeader.DestinationPort) || ports.Contains(udpHeader.SourcePort))
                         {
-                            //  Albion Photon Data       
-                            PacketEvent?.Invoke(String.Format("Albion UDP Packet, size={0}",ipHeader.MessageLength));
-                            Console.WriteLine("Albion packet received .. size = " + udpHeader.payloadLength.ToString());
-
+                            // Console.WriteLine("Albion packet received .. size = " + udpHeader.payloadLength.ToString());
                             // DumpRawPacket(byteData, nReceived);
-
                             // DumpUDPPacket(udpHeader);
-                            photonDecoder.decodePacket(
-                            new BeBinaryReader(new MemoryStream(udpHeader.Data,0,udpHeader.payloadLength)));
 
-                    } else if (udpHeader.DestinationPort == "53" || udpHeader.SourcePort == "53") {
+                            //  Albion Photon Data       
+                            PacketEvent_Info?.Invoke(String.Format("--  Albion UDP Packet, size={0}", ipHeader.MessageLength));
+                            PacketEvent_UDP?.Invoke(udpHeader);
+                        } else if (udpHeader.DestinationPort == "53" || udpHeader.SourcePort == "53") {
                             //  If the port is equal to 53 then the underlying protocol is DNS
                             //  Note: DNS can use either TCP or UDP thats why the check is done twice               
-                            PacketEvent?.Invoke(String.Format("UDP DNS Packet, size={0}", udpHeader.payloadLength));
+                            // PacketEvent_Info?.Invoke(String.Format("UDP DNS Packet, size={0}", udpHeader.payloadLength));
                         }                        
                         break;
 

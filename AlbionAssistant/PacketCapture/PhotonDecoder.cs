@@ -23,9 +23,26 @@ using System.IO;
 namespace PhotonObserver {
 
 
+    // This is a complete reliable message, which might have been reassembled from fragments.
+    public class PhotonEventReliableDatum {
+            int ChannelID;
+            byte[] data;
+            public PhotonEventReliableDatum(int channel_id, byte[] datum) {
+                this.ChannelID = channel_id;
+                this.data = datum;
+            }
+    }
+
     public class PhotonDecoder {
 
-        public void decodePacket(BinaryReader packet) {
+        public delegate void Delegate_PhotonEvent_Info(string info);
+        public event Delegate_PhotonEvent_Info Event_Photon_Info;
+
+        public delegate void Delegate_PhotonEvent_ReliableDatum(PhotonEventReliableDatum info);
+        public event Delegate_PhotonEvent_ReliableDatum Event_Photon_ReliableDatum;
+
+
+        public void decodeUDPPacket(BinaryReader packet) {
 
             const int CMD_HDR_LEN = 12;
 
@@ -36,12 +53,12 @@ namespace PhotonObserver {
             packet.ReadUInt32(); // Timestamp
             packet.ReadInt32(); // Challenge
 
-            Console.WriteLine("Photon Packet with ({0}) commands", cmd_count);
+            Event_Photon_Info?.Invoke(String.Format("Photon Packet with ({0}) commands", cmd_count));
 
             for (int cmd_number = 0; cmd_number < cmd_count; cmd_number++) {
                 // read photon command header
                 CommandType cmd_type = (CommandType)packet.ReadByte(); // Type
-                packet.ReadByte(); // ChannelID
+                int cmd_channel_id = packet.ReadByte(); // ChannelID
                 packet.ReadByte(); // Flags
                 packet.ReadByte(); // ReservedByte
                 int command_length_info = packet.ReadInt32(); // Length                  -- ? uint32 ?
@@ -49,8 +66,9 @@ namespace PhotonObserver {
 
                 int data_length = command_length_info - CMD_HDR_LEN;
 
-                Console.WriteLine("  [{0}] Photon Cmd - {1}:{2}  len {3}", 
-                    cmd_number, cmd_type.ToString(), (int)cmd_type, command_length_info);
+                Event_Photon_Info?.Invoke(
+                    String.Format("  [{0}] Photon Cmd - {1}:{2}  len {3}", 
+                        cmd_number, cmd_type.ToString(), (int)cmd_type, command_length_info));
 
                 // decode paramaters
                 switch (cmd_type) {
@@ -84,7 +102,16 @@ namespace PhotonObserver {
                 
                 byte[] data = packet.ReadBytes(data_length);
 
-                
+                // now do something based on the packet type
+
+                switch (cmd_type) {
+                    case CommandType.SendReliable:
+                        Event_Photon_ReliableDatum?.Invoke(new PhotonEventReliableDatum(cmd_channel_id,data));
+                        break;
+                    default:
+                        // do nothing
+                        break;
+                }
             }
         }
 
