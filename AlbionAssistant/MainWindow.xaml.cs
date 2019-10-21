@@ -17,7 +17,7 @@ using System.Windows.Controls;
 using System.Linq;
 
 using Be.IO;
-using PhotonObserver;
+using IPPacketCapture;
 
 // this needs to run as administrator to sniff network packets
 // https://stackoverflow.com/questions/2818179/how-do-i-force-my-net-application-to-run-as-administrator
@@ -44,6 +44,7 @@ namespace AlbionAssistant
     {
         PacketCapture captureManager = new PacketCapture();
         PhotonDecoder photonDecoder = new PhotonDecoder();
+        Decode_Albion albionDecoder = new Decode_Albion(); 
 
         public MainWindow()
         {
@@ -72,32 +73,44 @@ namespace AlbionAssistant
             treeView.Items.Add(root);
             */
 
+            // setup info log hooks
             photonDecoder.Event_Photon_Info += PhotonDecoder_Event_Photon_Info;
+            captureManager.PacketEvent_Info += CaptureManager_PacketEvent;
+            albionDecoder.Event_Albion_Info += AlbionDecoder_Event_Albion_Info;
+
+
+            // setup packet processing hooks
+            captureManager.PacketEvent_UDP += CaptureManager_PacketEvent_UDP;
             photonDecoder.Event_Photon_ReliableDatum += PhotonDecoder_PhotonReliableDatumEvent;
+            
 
             Console.WriteLine("Start Capturing Packets...");
-            captureManager.PacketEvent_Info += CaptureManager_PacketEvent;
-            captureManager.PacketEvent_UDP += CaptureManager_PacketEvent_UDP;
             captureManager.StartCapture();
 
 
+        }
+
+        private void CaptureManager_PacketEvent(string info) {
+            AddEvent("Raw: " + info);
+        }
+
+        private void PhotonDecoder_Event_Photon_Info(string info) {
+            AddEvent("Photon: " + info);
+        }
+        private void AlbionDecoder_Event_Albion_Info(string info) {
+            AddEvent("Albion: " + info);
         }
 
         private void CaptureManager_PacketEvent_UDP(UDPHeader packet) {
             photonDecoder.decodeUDPPacket(new BeBinaryReader(new MemoryStream(packet.Data,0,packet.payloadLength)));
         }
 
-        private void PhotonDecoder_Event_Photon_Info(string info) {
-            AddEvent(info);
-        }
-
+        
         private void PhotonDecoder_PhotonReliableDatumEvent(PhotonEventReliableDatum info) {
             // TODO... start decoding Albion Packets!
+            albionDecoder.DecodeReliableDatum(info);
         }
 
-        private void CaptureManager_PacketEvent(string info) {
-            AddEvent(info);
-        }
 
         private void MainWindow_Closed(object sender, EventArgs e) {
             captureManager.StopCapture();

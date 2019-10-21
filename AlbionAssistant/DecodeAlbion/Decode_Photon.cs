@@ -20,7 +20,7 @@ using Be.IO;
 
 using System.IO;
 
-namespace PhotonObserver {
+namespace AlbionAssistant {
 
 
     // This is a complete reliable message, which might have been reassembled from fragments.

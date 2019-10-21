@@ -15,10 +15,10 @@ using System.Net.Sockets;
 
 using Be.IO;
 
-using PhotonObserver;
+using AlbionAssistant;
 
 
-namespace AlbionAssistant {
+namespace IPPacketCapture {
 
     public enum Protocol {
         TCP = 6,
@@ -41,7 +41,7 @@ namespace AlbionAssistant {
         public delegate void PacketEvent_UDP_Delegate(UDPHeader packet);
         public event PacketEvent_UDP_Delegate PacketEvent_UDP;
 
-        public PhotonObserver.PhotonDecoder photonDecoder = new PhotonObserver.PhotonDecoder();
+        public AlbionAssistant.PhotonDecoder photonDecoder = new AlbionAssistant.PhotonDecoder();
 
 
         public PacketCapture() { }

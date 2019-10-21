@@ -10,7 +10,7 @@ using System.Text;
 using System;
 using System.IO;
 
-namespace AlbionAssistant
+namespace IPPacketCapture
 {
     public class UDPHeader
     {
