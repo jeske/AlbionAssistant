@@ -91,11 +91,11 @@ namespace AlbionAssistant
         }
 
         private void CaptureManager_PacketEvent(string info) {
-            AddEvent("Raw: " + info);
+            //AddEvent("Raw: " + info);
         }
 
         private void PhotonDecoder_Event_Photon_Info(string info) {
-            AddEvent("Photon: " + info);
+            //AddEvent("Photon: " + info);
         }
         private void AlbionDecoder_Event_Albion_Info(string info) {
             AddEvent("Albion: " + info);
@@ -108,6 +108,7 @@ namespace AlbionAssistant
         
         private void PhotonDecoder_PhotonReliableDatumEvent(PhotonEventReliableDatum info) {
             // TODO... start decoding Albion Packets!
+            AddEvent("Photon-reliable packet - size: " + info.data.Length.ToString());
             albionDecoder.DecodeReliableDatum(info);
         }
 

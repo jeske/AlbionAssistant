@@ -25,8 +25,8 @@ namespace AlbionAssistant {
 
     // This is a complete reliable message, which might have been reassembled from fragments.
     public class PhotonEventReliableDatum {
-            int ChannelID;
-            byte[] data;
+            public int ChannelID;
+            public byte[] data;
             public PhotonEventReliableDatum(int channel_id, byte[] datum) {
                 this.ChannelID = channel_id;
                 this.data = datum;

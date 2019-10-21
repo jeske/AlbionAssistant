@@ -78,6 +78,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="DecodeAlbion\AlbionEvents.cs" />
+    <Compile Include="DecodeAlbion\AlbionOperations.cs" />
     <Compile Include="DecodeAlbion\Decode_Albion.cs" />
     <Compile Include="IPPacketCapture\DNSHeader.cs" />
     <Compile Include="IPPacketCapture\IPHeader.cs" />
