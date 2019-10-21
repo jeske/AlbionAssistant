@@ -3,7 +3,7 @@
 // Copyright (C) 2019 by David W. Jeske
 //
 
-#define HIDE_PARSE_ERRORS
+// #define HIDE_PARSE_ERRORS
 
 using System;
 using System.IO;
@@ -116,14 +116,14 @@ namespace AlbionAssistant {
                             packet.ReadByte(); // Operation Code
                             break;
                         case MessageTypes.EventData:
-                            break;
+                            break;                        
                         case MessageTypes.Response:
                         case MessageTypes.ResponseAlt:
                             var opResponse = new ReliableMessage_Response();
-
                             opResponse.ChannelID = cmd_channel_id;
+
                             opResponse.OperationCode = packet.ReadByte(); // Operation Code
-                            opResponse.OperationResponseCode = packet.ReadByte(); // Operation Response Code
+                            opResponse.OperationResponseCode = packet.ReadUInt16(); // Operation Response Code
                             opResponse.OperationDebugByte = packet.ReadByte(); // Operation Debug Byte                                                        
                             
                             opResponse.ParameterCount = packet.ReadUInt16(); // Parameter Count   (?? is this valid for all msg types?)
@@ -164,7 +164,7 @@ namespace AlbionAssistant {
         public MessageTypes type;
 
         public byte OperationCode;
-        public byte OperationResponseCode;
+        public UInt16 OperationResponseCode;
         public byte OperationDebugByte;
 
         public PhotonDataAtom ParamaterData;

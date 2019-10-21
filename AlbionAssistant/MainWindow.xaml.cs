@@ -95,7 +95,7 @@ namespace AlbionAssistant
         }
 
         private void PhotonDecoder_Event_Photon_Info(string info) {
-            AddEvent("Photon: " + info);
+            // AddEvent("Photon: " + info);
         }
         private void AlbionDecoder_Event_Albion_Info(string info) {
             AddEvent("Albion: " + info);
