@@ -5,19 +5,30 @@
 
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Threading;
-
 using System.Security.Principal; // to check we are administrator
 
 using System.Collections.ObjectModel;
 
+using System.Windows.Controls;
+
+using System.Linq;
+
 // this needs to run as administrator to sniff network packets
 // https://stackoverflow.com/questions/2818179/how-do-i-force-my-net-application-to-run-as-administrator
+
+
+// WPF TreeView
+// https://www.codeproject.com/Articles/124644/Basic-Understanding-of-Tree-View-in-WPF
+
+
+
+// default treeview includes it's own scroll view, but then we can't control it
+// https://stackoverflow.com/questions/54311985/wpf-treeview-in-scrollview-how-to-enable-scrolling-with-mouse-over-treeview
+// https://stackoverflow.com/questions/15151974/synchronized-scrolling-of-two-scrollviewers-whenever-any-one-is-scrolled-in-wpf
+// https://docs.microsoft.com/en-us/previous-versions/dotnet/netframework-3.5/ms752352(v=vs.90)
+// https://blogs.msdn.microsoft.com/jpricket/2007/11/05/exploring-wpf-programmatically-scrolling-a-treeview/
 
 
 namespace AlbionAssistant
@@ -33,6 +44,9 @@ namespace AlbionAssistant
         {
             InitializeComponent();
             this.Closed += MainWindow_Closed;
+            
+            // ---------------------------
+
             treeView.Items.Add(
                 new MenuItem{ 
                     Title = String.Format(
@@ -63,10 +77,7 @@ namespace AlbionAssistant
         }
 
         private void CaptureManager_PacketEvent(string info) {
-            this.Dispatcher.Invoke(new Action(() => {
-                treeView.Items.Add(new MenuItem() { Title = info });
-            }));
-            
+            AddEvent(info);
         }
 
         private void MainWindow_Closed(object sender, EventArgs e) {
@@ -76,8 +87,15 @@ namespace AlbionAssistant
             System.Windows.Application.Current.Shutdown();
             // TODO: figure out how to make this quit faster.. it takes a while for the threads to exit...
         }
-               
-    }
+
+        public void AddEvent(string data) {
+            this.Dispatcher.Invoke(new Action(() => {                               
+                treeView.Items.Insert(0, new MenuItem() { Title = data });
+            }));
+
+        }
+
+        }
 
     public class MenuItem
     {
