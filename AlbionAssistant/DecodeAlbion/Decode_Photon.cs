@@ -3,6 +3,7 @@
 // Copyright (C) 2019 by David W. Jeske
 //
 
+#define HIDE_PARSE_ERRORS
 
 using System;
 using System.IO;
@@ -70,8 +71,13 @@ namespace AlbionAssistant {
 
                 // read command data
                 byte[] data = packet.ReadBytes(data_length);
-
-                decode_PhotonPacket(cmd_type,cmd_channel_id, data);                
+                
+                try { decode_PhotonPacket(cmd_type,cmd_channel_id, data); }
+                #if HIDE_PARSE_ERRORS
+                catch (System.IO.EndOfStreamException ex) {                    
+                }
+                #endif
+                finally {}
 
             } // for loop
         }
@@ -128,10 +134,9 @@ namespace AlbionAssistant {
                                 PhotonParamType paramType = (PhotonParamType)packet.ReadByte(); // paramType
 
 
-                                Decode_PhotonValueType.Decode(packet,paramType);                                
+                                opResponse.ParamaterData = Decode_PhotonValueType.Decode(packet,paramType);                                
                             }
-
-                            opResponse.data = packet.ReadBytesToEnd();
+                            
                             Event_Photon_ReliableResponse?.Invoke(opResponse);
                             break;
                         default:
@@ -141,6 +146,7 @@ namespace AlbionAssistant {
                     break;
                 case CommandType.Connect:
                 case CommandType.VerifyConnect:
+                case CommandType.Ping:
                     break;
                 default:
                     Event_Photon_Info?.Invoke("Decode_Photon: ignoring unknown command type: " + cmd_type.ToString());
@@ -161,8 +167,12 @@ namespace AlbionAssistant {
         public byte OperationResponseCode;
         public byte OperationDebugByte;
 
-        public UInt16 ParameterCount;
-        public byte[] data;
+        public PhotonDataAtom ParamaterData;
+        
+        public UInt16 ParameterCount;        
+        public byte[] raw_data;
+
+
     }
     /*
 

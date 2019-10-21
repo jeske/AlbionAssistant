@@ -60,17 +60,26 @@ namespace AlbionAssistant {
 
     public abstract class PhotonDataAtom {
         public PhotonParamType type;
+        public override string ToString() {
+            return "PhotonDataAtom(" + type.ToString() + ")";      
+        }
     }
 
     public class PhotonData_UNRECOGNIZED : PhotonDataAtom {
         public PhotonData_UNRECOGNIZED(PhotonParamType type) {
             this.type = type;
         }
+        public override string ToString() {
+            return "PhotonData_UNRECOGNIZED(" + type.ToString() + ")";
+        }
     }
 
     public class PhotonData_Nil : PhotonDataAtom {
         public PhotonData_Nil() {
             this.type = PhotonParamType.NilType;
+        }
+        public override string ToString() {
+            return "PhotonData_Nil";
         }
     }
 
@@ -79,7 +88,11 @@ namespace AlbionAssistant {
         public PhotonData_Value(PhotonParamType type, T data) { 
             this.type = type;
             this.data = data; 
-        }        
+        }
+        public override string ToString() {
+            return String.Format("PhotonData_Value<{0}:{1}>({2})",
+                type,typeof(T).ToString(),data.ToString());
+        }
     }
 
     public class PhotonData_Slice : PhotonDataAtom  {       
@@ -89,7 +102,9 @@ namespace AlbionAssistant {
             this.type = type;
             this.data = data;
         }
-
+        public override string ToString() {
+            return String.Format("PhotonData_Slice<{0}>[ {1} ]",type,data);
+        }
 
         public static PhotonData_Slice DecodeFrom(BinaryReader packet) {
             var length = packet.ReadUInt16();

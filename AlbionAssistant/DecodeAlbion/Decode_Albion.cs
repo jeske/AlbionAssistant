@@ -15,7 +15,7 @@ namespace AlbionAssistant {
             Event_Albion_Info?.Invoke(
                 String.Format("RESPONSE [{0}] - {0} bytes, chn {1}, ",
                     info.OperationCode,
-                    info.data.Length,
+                    info.ParamaterData,
                     info.ChannelID
                     ));
 
