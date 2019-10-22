@@ -3,7 +3,7 @@
 // Copyright (C) 2019 by David W. Jeske
 //
 
-// #define HIDE_PARSE_ERRORS
+#define HIDE_PARSE_ERRORS
 
 using System;
 using System.IO;
@@ -37,13 +37,16 @@ namespace AlbionAssistant {
 
     public class PhotonDecoder {
 
-        public delegate void Delegate_PhotonEvent_Info(string info);
-        public event Delegate_PhotonEvent_Info Event_Photon_Info;        
-        public event Delegate_PhotonEvent_Info Event_Photon_Cmd_Info;
+        public delegate void Delegate_Photon_Info(string info);
+        public event Delegate_Photon_Info Event_Photon_Info;        
+        public event Delegate_Photon_Info Event_Photon_Cmd_Info;
 
 
-        public delegate void Delegate_PhotonEvent_ReliableDatum(ReliableMessage_Response info);
-        public event Delegate_PhotonEvent_ReliableDatum Event_Photon_ReliableResponse;
+        public delegate void Delegate_Photon_ReliableDatum(ReliableMessage_Response info);
+        public event Delegate_Photon_ReliableDatum Event_Photon_ReliableResponse;
+
+        public delegate void Delegate_Photon_ReliableEvent(ReliableMessage_EventData info);
+        public event Delegate_Photon_ReliableEvent Event_Photon_ReliableEvent;
 
 
         public void decodeUDPPacket(BinaryReader packet) {
@@ -171,6 +174,12 @@ namespace AlbionAssistant {
         private void decode_EventData(PhotonCmdHeader cmd_hdr, BinaryReader packet) { 
             int event_code = packet.ReadByte(); // Event Code
             Event_Photon_Cmd_Info?.Invoke("Photon Reliable Event Data - " + event_code);
+
+            var evResponse = new ReliableMessage_EventData();
+            evResponse.evType = (AlbionEvent)event_code;
+
+            Event_Photon_ReliableEvent?.Invoke(evResponse);
+
         }
 
         private void decode_Response(PhotonCmdHeader cmd_hdr, BinaryReader packet) {
@@ -206,6 +215,10 @@ namespace AlbionAssistant {
         }
 
 
+    }
+
+    public class ReliableMessage_EventData {
+        public AlbionEvent evType;
     }
 
     public class ReliableMessage_Response {

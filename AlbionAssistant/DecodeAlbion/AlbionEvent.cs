@@ -7,7 +7,7 @@ namespace AlbionAssistant {
 
 // from  - https://github.com/broderickhyman/albiondata-client/blob/master/client/events.go
 
-enum AlbionEventType {  // uint16
+public enum AlbionEvent {  // uint16
     evUnused                               = 0,
 
     evLeave                                = 1,

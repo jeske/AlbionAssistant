@@ -16,7 +16,7 @@ namespace AlbionAssistant {
                 case AlbionParamID.albOperation:
                     var intval = val as PhotonData_Value<Int16>;
                     if (intval != null) {
-                        return String.Format("[albOp {0}] = {1}:{2}",(int)paramID,((AlbionOperationType)intval.data).ToString(),intval.data);
+                        return String.Format("[albOp {0}] = {1}:{2}",(int)paramID,((AlbionOperation)intval.data).ToString(),intval.data);
                     } else {
                         return String.Format("[albOp {0}] = {1}",(int)paramID,val);
                     }

@@ -7,7 +7,7 @@
 
 namespace AlbionAssistant {
 
-enum AlbionOperationType { // uint16
+enum AlbionOperation { // uint16
     opUnused                                  = 0,
 
     opPing                                    = 1,

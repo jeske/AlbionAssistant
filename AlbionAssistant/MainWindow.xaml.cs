@@ -85,12 +85,17 @@ namespace AlbionAssistant
             // setup packet processing hooks
             captureManager.PacketEvent_UDP += CaptureManager_PacketEvent_UDP;
             photonDecoder.Event_Photon_ReliableResponse += PhotonDecoder_PhotonReliableDatumEvent;
+            photonDecoder.Event_Photon_ReliableEvent += PhotonDecoder_Event_Photon_ReliableEvent;
             
 
             Console.WriteLine("Start Capturing Packets...");
             captureManager.StartCapture();
 
 
+        }
+
+        private void PhotonDecoder_Event_Photon_ReliableEvent(ReliableMessage_EventData info) {
+            AddEvent("Albion Event: " + info.evType);
         }
 
         private void PhotonDecoder_Event_Photon_Cmd_Info(string info) {
@@ -127,6 +132,7 @@ namespace AlbionAssistant
         }
 
         public void AddEvent(string data) {
+            Console.WriteLine(data);
             this.Dispatcher.Invoke(new Action(() => {                               
                 treeView.Items.Insert(0, new MenuItem() { Title = data });
             }));
