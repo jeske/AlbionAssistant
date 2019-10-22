@@ -81,13 +81,14 @@
     <Compile Include="DecodeAlbion\AlbionOperation.cs" />
     <Compile Include="DecodeAlbion\AlbionParamID.cs" />
     <Compile Include="DecodeAlbion\Decode_Albion.cs" />
-    <Compile Include="DecodeAlbion\Decode_PhotonValueType.cs" />
+    <Compile Include="DecodePhoton\Decode_PhotonValueType.cs" />
     <Compile Include="IPPacketCapture\DNSHeader.cs" />
     <Compile Include="IPPacketCapture\IPHeader.cs" />
-    <Compile Include="DecodeAlbion\Decode_Photon.cs" />
+    <Compile Include="DecodePhoton\Decode_Photon.cs" />
     <Compile Include="IPPacketCapture\_PacketCapture.cs" />
     <Compile Include="IPPacketCapture\TCPHeader.cs" />
     <Compile Include="IPPacketCapture\UDPHeader.cs" />
+    <Compile Include="MainWindow_CodeBehind.cs" />
     <Compile Include="WindowsFilteringPlatform.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

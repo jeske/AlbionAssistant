@@ -64,7 +64,7 @@ namespace AlbionAssistant {
 
             for (int cmd_number = 0; cmd_number < cmd_count; cmd_number++) {
 
-                // *************************************
+                // ********SSSS*****************************
                 // Decode Photon Command Header
                 // *************************************
                 var cmd_hdr = new PhotonCmdHeader();
