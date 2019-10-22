@@ -37,20 +37,29 @@ using IPPacketCapture;
 
 namespace AlbionAssistant
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
+
     public partial class MainWindow : Window
     {
         PacketCapture captureManager = new PacketCapture();
         PhotonDecoder photonDecoder = new PhotonDecoder();
         Decode_Albion albionDecoder = new Decode_Albion(); 
 
-        public MainWindow()
-        {
-            InitializeComponent();
-            this.Closed += MainWindow_Closed;
+        public struct PacketStats {
+            public int udp_packets;
+            public int photon_packets;
+            public int photon_commands;
+            public int photon_reliable_response;
+            public int photon_reliable_event;
             
+        }
+        public PacketStats packetStats;
+
+
+
+        private void Setup_Packet_Capture() {
+        
+            
+
             // ---------------------------
 
             treeView.Items.Add(
@@ -59,24 +68,12 @@ namespace AlbionAssistant
                         "This only works with Administrator, do we have it? .. [{0}]", 
                         AppElevation.CheckForAdministrator() ? "YES" : "NO")
                 });
-            // TODO: if we don't have administrator, we should put up an error dialog... 
-
-
-            // throw some sample items into the UI control
-            /*
-            MenuItem root = new MenuItem() { Title = "Menu" };
-            MenuItem childItem1 = new MenuItem() { Title = "Child item #1" };
-            childItem1.Items.Add(new MenuItem() { Title = "Child item #1.1" });
-            childItem1.Items.Add(new MenuItem() { Title = "Child item #1.2" });
-            root.Items.Add(childItem1);
-            root.Items.Add(new MenuItem() { Title = "Child item #2" });
-            treeView.Items.Add(root);
-            */
+            // TODO: if we don't have administrator, we should put up an error dialog...
 
             // setup info log hooks
-            //captureManager.PacketEvent_Info += CaptureManager_UDPPacket_Info;
-            //photonDecoder.Event_Photon_Info += PhotonDecoder_Event_Photon_Info;
-            //photonDecoder.Event_Photon_Cmd_Info += PhotonDecoder_Event_Photon_Cmd_Info;            
+            captureManager.PacketEvent_Info += CaptureManager_UDPPacket_Info;
+            photonDecoder.Event_Photon_Info += PhotonDecoder_Event_Photon_Info;
+            photonDecoder.Event_Photon_Cmd_Info += PhotonDecoder_Event_Photon_Cmd_Info;            
             albionDecoder.Event_Albion_Info += AlbionDecoder_Event_Albion_Info;
 
 
@@ -89,22 +86,27 @@ namespace AlbionAssistant
             captureManager.StartCapture();
         }
 
+
+
         #region info logging        
-        private void CaptureManager_UDPPacket_Info(string info)        /**/ { LogEvent("Raw: " + info); }
-        private void PhotonDecoder_Event_Photon_Cmd_Info(string info)  /**/ { LogEvent("Photon Reliable Cmd: " + info); }
-        private void PhotonDecoder_Event_Photon_Info(string info)      /**/ { LogEvent("Photon: " + info);  }
-        private void AlbionDecoder_Event_Albion_Info(string info)      /**/ { LogEvent("Albion: " + info); }
+        private void CaptureManager_UDPPacket_Info(string info)        /**/ { LogEvent(false,"Raw: " + info); }
+        private void PhotonDecoder_Event_Photon_Cmd_Info(string info)  /**/ { LogEvent(false,"Photon Cmd: " + info);  packetStats.photon_commands++;  }
+        private void PhotonDecoder_Event_Photon_Info(string info)      /**/ { LogEvent(false, "Photon: " + info); packetStats.photon_packets++;  }
+        private void AlbionDecoder_Event_Albion_Info(string info)      /**/ { LogEvent(true, "Albion: " + info); }
         #endregion
 
 
         #region ************** packet wire up  ********************************
         private void CaptureManager_PacketEvent_UDP(UDPHeader packet) {
+            packetStats.udp_packets++;
             photonDecoder.decodeUDPPacket(new BeBinaryReader(new MemoryStream(packet.Data,0,packet.payloadLength)));
         }
         private void PhotonDecoder_Event_Photon_ReliableResponse(ReliableMessage_Response info) {
+            packetStats.photon_reliable_response++;
             albionDecoder.Decode_ReliableResponse(info);
         }
         private void PhotonDecoder_Event_Photon_ReliableEvent(ReliableMessage_EventData info) {
+            packetStats.photon_reliable_event++;
             // LogEvent("Albion Event: " + info.evType);
         }
         #endregion
@@ -121,13 +123,18 @@ namespace AlbionAssistant
             // TODO: figure out how to make this quit faster.. it takes a while for the threads to exit...
         }
 
-        // this is the main way we log events
-        public void LogEvent(string data) {
-            Console.WriteLine(data);     // send everything to the console
-            this.Dispatcher.Invoke(new Action(() => {                               
-                treeView.Items.Insert(0, new MenuItem() { Title = data });
-            }));
 
+        public void LogEvent(string data) {
+            LogEvent(true,data);
+        }
+        // this is the main way we log events
+        public void LogEvent(bool sendToUI, string data) {
+            Console.WriteLine(data);     // send everything to the console
+            if (sendToUI) {
+                this.Dispatcher.Invoke(new Action(() => {                               
+                    treeView.Items.Insert(0, new MenuItem() { Title = data });
+                }));            
+            }
         }
 
         }
@@ -188,5 +195,17 @@ namespace AlbionAssistant
         }
 
     }
+
+
+     // throw some sample items into the UI control
+            /*
+            MenuItem root = new MenuItem() { Title = "Menu" };
+            MenuItem childItem1 = new MenuItem() { Title = "Child item #1" };
+            childItem1.Items.Add(new MenuItem() { Title = "Child item #1.1" });
+            childItem1.Items.Add(new MenuItem() { Title = "Child item #1.2" });
+            root.Items.Add(childItem1);
+            root.Items.Add(new MenuItem() { Title = "Child item #2" });
+            treeView.Items.Add(root);
+            */
 
 }

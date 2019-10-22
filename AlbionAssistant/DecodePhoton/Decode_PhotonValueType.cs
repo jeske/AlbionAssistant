@@ -27,8 +27,6 @@ namespace AlbionAssistant {
                 
                 case PhotonParamType.Int8Type:        return new PhotonData_Value<byte>(paramType, packet.ReadByte());
 
-                case PhotonParamType.Unk_1:
-                case PhotonParamType.Unk_116:
                 case PhotonParamType.Int16Type_o:
                 case PhotonParamType.Int16Type:       return new PhotonData_Value<Int16>(paramType, packet.ReadInt16());
                 case PhotonParamType.Int32Type:       return new PhotonData_Value<Int32>(paramType, packet.ReadInt32());
@@ -52,9 +50,10 @@ namespace AlbionAssistant {
                 case PhotonParamType.DictionaryType:
 	            case PhotonParamType.EventDateType:
 	            case PhotonParamType.Hashtable:
-	            case PhotonParamType.OperationResponseType :
-	            case PhotonParamType.OperationRequestType :
-	            case PhotonParamType.ObjectSliceType :
+	            case PhotonParamType.OperationResponseType:
+	            case PhotonParamType.OperationRequestType:
+	            case PhotonParamType.ObjectSliceType:
+                    return new PhotonData_NotYetParsed(paramType);                    
                 default:
                     return new PhotonData_UNRECOGNIZED(paramType);                    
             }
@@ -79,6 +78,15 @@ namespace AlbionAssistant {
         }
         public override string ToString() {
             return "PhotonData_UNRECOGNIZED(" + type.ToString() + ")";
+        }
+    }
+
+    public class PhotonData_NotYetParsed : PhotonDataAtom {
+        public PhotonData_NotYetParsed(PhotonParamType type) {
+            this.type = type;
+        }
+        public override string ToString() {
+            return "PhotonData_NotYetParsed(" + type.ToString() + "," + ((int)type).ToString() + ")";
         }
     }
 

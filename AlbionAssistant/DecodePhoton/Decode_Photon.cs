@@ -78,7 +78,7 @@ namespace AlbionAssistant {
 
                 int data_length = cmd_hdr.CmdLength - CMD_HDR_LEN;
 
-                Event_Photon_Info?.Invoke(
+                Event_Photon_Cmd_Info?.Invoke(
                     String.Format("  [{0}] Photon Cmd - {1}:{2}  len {3}", 
                         cmd_number, cmd_hdr.type.ToString(), (int)cmd_hdr.type, cmd_hdr.CmdLength));
 
