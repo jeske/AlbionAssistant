@@ -38,7 +38,9 @@ namespace AlbionAssistant {
     public class PhotonDecoder {
 
         public delegate void Delegate_PhotonEvent_Info(string info);
-        public event Delegate_PhotonEvent_Info Event_Photon_Info;
+        public event Delegate_PhotonEvent_Info Event_Photon_Info;        
+        public event Delegate_PhotonEvent_Info Event_Photon_Cmd_Info;
+
 
         public delegate void Delegate_PhotonEvent_ReliableDatum(ReliableMessage_Response info);
         public event Delegate_PhotonEvent_ReliableDatum Event_Photon_ReliableResponse;
@@ -92,8 +94,11 @@ namespace AlbionAssistant {
 
         private void decode_PhotonPacket(PhotonCmdHeader cmd_hdr, byte[] data) {
             var packet = new BeBinaryReader(new MemoryStream(data, 0, data.Length));
+            
+            // *************************************
+            // Decode Photon Packet Payload
+            // *************************************
 
-            // decode paramaters
             switch (cmd_hdr.type) {
                 case CommandType.Acknowledge:     // 8 bytes of parms
                     packet.ReadUInt32(); // RecvRelSeqNum
@@ -115,8 +120,9 @@ namespace AlbionAssistant {
 
                     break;
                 case CommandType.SendReliable:
+                    // **** RELIABLE COMMAND HEADER **** 
                     int rel_msg_sig = packet.ReadByte(); // Reliable Message Signature
-                    MessageTypes rel_msg_type = (MessageTypes)packet.ReadByte(); // reliable message type
+                    RelMessageTypes rel_msg_type = (RelMessageTypes)packet.ReadByte(); // reliable message type
                    
                     if ((int)rel_msg_type > 128) {
                         // encrypted message types not supported
@@ -124,15 +130,18 @@ namespace AlbionAssistant {
                         break;
                     }
 
+                       // *************************************
+                       // Decode Photon Reliable Message Types
+                       // *************************************
                     switch (rel_msg_type) {
-                        case MessageTypes.Request:
-                            packet.ReadByte(); // Operation Code
+                        case RelMessageTypes.Request:
+                            decode_Request(cmd_hdr,packet);                           
                             break;
-                        case MessageTypes.EventData:
-                            
+                        case RelMessageTypes.EventData:
+                            decode_EventData(cmd_hdr,packet);
                             break;                        
-                        case MessageTypes.Response:
-                        case MessageTypes.ResponseAlt:
+                        case RelMessageTypes.Response:
+                        case RelMessageTypes.ResponseAlt:
                             decode_Response(cmd_hdr,packet);
                             break;
                         default:
@@ -151,6 +160,19 @@ namespace AlbionAssistant {
             
         }
 
+        // see - https://github.com/broderickhyman/photon_spectator/blob/master/photon_command.go#L88
+
+        private void decode_Request(PhotonCmdHeader cmd_hdr, BinaryReader packet) { 
+            int op_code = packet.ReadByte(); // Operation Code
+            Event_Photon_Cmd_Info?.Invoke("Photon Reliable Request - " + op_code);
+
+        }
+
+        private void decode_EventData(PhotonCmdHeader cmd_hdr, BinaryReader packet) { 
+            int event_code = packet.ReadByte(); // Event Code
+            Event_Photon_Cmd_Info?.Invoke("Photon Reliable Event Data - " + event_code);
+        }
+
         private void decode_Response(PhotonCmdHeader cmd_hdr, BinaryReader packet) {
             // see func ReliableMessage() decode in...
             // https://github.com/broderickhyman/photon_spectator/blob/master/photon_command.go
@@ -162,7 +184,9 @@ namespace AlbionAssistant {
             opResponse.OperationResponseCode = packet.ReadUInt16(); // Operation Response Code
             opResponse.OperationDebugByte = packet.ReadByte(); // Operation Debug Byte                                                        
 
-            opResponse.ParameterCount = packet.ReadUInt16(); // Parameter Count   (?? is this valid for all msg types?)
+            opResponse.ParameterCount = packet.ReadInt16(); // Parameter Count   (?? is this valid for all msg types?)
+
+            Event_Photon_Cmd_Info?.Invoke("Photon Reliable Response - " + opResponse.OperationResponseCode);
 
             var parameters = new ReliableMessage_Response.Paramaters();
             // decode the paramaters
@@ -196,7 +220,7 @@ namespace AlbionAssistant {
         public int ChannelID;
 
         protected byte signature;
-        public MessageTypes type;
+        public RelMessageTypes type;
 
         public byte OperationCode;
         public UInt16 OperationResponseCode;
@@ -204,7 +228,7 @@ namespace AlbionAssistant {
 
         public Paramaters ParamaterData;
         
-        public UInt16 ParameterCount;        
+        public Int16 ParameterCount;        
         public byte[] raw_data;
 
 
@@ -292,7 +316,7 @@ namespace AlbionAssistant {
         PhotonViewSerialization = 4,
     };
 
-    public enum MessageTypes {
+    public enum RelMessageTypes {
         Request = 2,
         ResponseAlt = 3,
         EventData = 4,

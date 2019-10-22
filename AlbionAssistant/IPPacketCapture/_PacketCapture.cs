@@ -199,7 +199,7 @@ namespace IPPacketCapture {
                         {
                             // Console.WriteLine("Albion packet received .. size = " + udpHeader.payloadLength.ToString());
                             // DumpRawPacket(byteData, nReceived);
-                            // DumpUDPPacket(udpHeader);
+                            DumpUDPPacket(udpHeader);
 
                             //  Albion Photon Data       
                             PacketEvent_Info?.Invoke(String.Format("--  Albion UDP Packet, size={0}", ipHeader.MessageLength));
@@ -230,15 +230,36 @@ namespace IPPacketCapture {
             }
         }
             void DumpUDPPacket(UDPHeader pkt) {
-                int column = 0;
-                for (int pos = 0; pos < pkt.payloadLength; pos++) {
-                    Console.Write("{0:X2} ",pkt.Data[pos]);
-                    column++;
-                    if (column > 10) { Console.WriteLine(""); column = 0;}
+                Console.WriteLine("-- UDP Packet Dump --");
+                int num_cols = 10;
+
+                for (int pos=0; pos < pkt.payloadLength;pos += num_cols) {                
+                    // write hex values
+                    for (int col = 0; col < num_cols; col++) {                
+                        if (pos+col < pkt.payloadLength) {
+                            Console.Write("{0:X2} ",pkt.Data[pos+col]);
+                        } else {
+                            Console.Write("   ");
+                        }
+                    }
+                    // write ASCII values
+                    Console.Write("    ");
+                    for (int col = 0; col < num_cols; col++) {      
+                        if (pos+col < pkt.payloadLength) {
+                            var val = pkt.Data[pos+col];
+                            if (val > 31 && val < 127) {
+                                Console.Write("{0} ", (char)val);
+                            } else {
+                                Console.Write(". ");
+                            }
+                        } else {
+                            Console.Write("  ");
+                        }
+                    }
+                    Console.WriteLine("");                    
                 }
-                if (column != 0) {               
-                    Console.WriteLine("");
-                }
+
+                
             }
 
 

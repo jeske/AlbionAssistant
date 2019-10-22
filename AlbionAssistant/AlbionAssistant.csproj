@@ -79,6 +79,7 @@
     </ApplicationDefinition>
     <Compile Include="DecodeAlbion\AlbionEvents.cs" />
     <Compile Include="DecodeAlbion\AlbionOperations.cs" />
+    <Compile Include="DecodeAlbion\AlbionParamID.cs" />
     <Compile Include="DecodeAlbion\Decode_Albion.cs" />
     <Compile Include="DecodeAlbion\Decode_PhotonValueType.cs" />
     <Compile Include="IPPacketCapture\DNSHeader.cs" />

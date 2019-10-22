@@ -74,8 +74,11 @@ namespace AlbionAssistant
             */
 
             // setup info log hooks
-            photonDecoder.Event_Photon_Info += PhotonDecoder_Event_Photon_Info;
             captureManager.PacketEvent_Info += CaptureManager_PacketEvent;
+
+            photonDecoder.Event_Photon_Info += PhotonDecoder_Event_Photon_Info;
+            photonDecoder.Event_Photon_Cmd_Info += PhotonDecoder_Event_Photon_Cmd_Info;
+            
             albionDecoder.Event_Albion_Info += AlbionDecoder_Event_Albion_Info;
 
 
@@ -88,6 +91,10 @@ namespace AlbionAssistant
             captureManager.StartCapture();
 
 
+        }
+
+        private void PhotonDecoder_Event_Photon_Cmd_Info(string info) {
+            // AddEvent("Photon Reliable Cmd: " + info);
         }
 
         private void CaptureManager_PacketEvent(string info) {

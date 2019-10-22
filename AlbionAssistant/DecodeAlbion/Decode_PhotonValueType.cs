@@ -20,10 +20,16 @@ namespace AlbionAssistant {
     public static class Decode_PhotonValueType {
         public static PhotonDataAtom Decode(BinaryReader packet, PhotonParamType paramType) {
             switch (paramType) {
+            
+                case PhotonParamType.NilType_o:
                 case PhotonParamType.NilType:         return new PhotonData_Nil();
                 case PhotonParamType.BooleanType:     return new PhotonData_Value<bool>(paramType, packet.ReadByte() == 1 ? true : false);
-
+                
                 case PhotonParamType.Int8Type:        return new PhotonData_Value<byte>(paramType, packet.ReadByte());
+
+                case PhotonParamType.Unk_1:
+                case PhotonParamType.Unk_116:
+                case PhotonParamType.Int16Type_o:
                 case PhotonParamType.Int16Type:       return new PhotonData_Value<Int16>(paramType, packet.ReadInt16());
                 case PhotonParamType.Int32Type:       return new PhotonData_Value<Int32>(paramType, packet.ReadInt32());
                 case PhotonParamType.Int64Type:       return new PhotonData_Value<Int64>(paramType, packet.ReadInt64());
@@ -44,8 +50,8 @@ namespace AlbionAssistant {
 
                 case PhotonParamType.Custom:
                 case PhotonParamType.DictionaryType:
-	            case PhotonParamType.EventDateType :
-	            case PhotonParamType.Hashtable :
+	            case PhotonParamType.EventDateType:
+	            case PhotonParamType.Hashtable:
 	            case PhotonParamType.OperationResponseType :
 	            case PhotonParamType.OperationRequestType :
 	            case PhotonParamType.ObjectSliceType :
@@ -86,7 +92,7 @@ namespace AlbionAssistant {
     }
 
     public class PhotonData_Value<T> : PhotonDataAtom  {        
-        T data;
+        public T data;
         public PhotonData_Value(PhotonParamType type, T data) { 
             this.type = type;
             this.data = data; 
@@ -150,9 +156,18 @@ namespace AlbionAssistant {
 
 
     public enum PhotonParamType {
+        Unk_1 = 1,
+        Unk_116 = 116,
+
+
+        
+        NilType_o = 0,        
+        Int16Type_o = 7,
+
         NilType = 42,
 
         DictionaryType = 68,
+
         StringSliceType = 97,
 
         Int8Type = 98,
@@ -163,12 +178,16 @@ namespace AlbionAssistant {
         Hashtable = 104,
         Int32Type = 105,
         Int16Type = 107,
+        
         Int64Type = 108,
         Int32SliceType = 110,
         BooleanType = 111,
         OperationResponseType = 112,
         OperationRequestType = 113,
         StringType = 115,
+
+
+
         Int8SliceType = 120,
         SliceType = 121,
         ObjectSliceType = 122,
